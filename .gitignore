@@ -1,0 +1,82 @@
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# ── PyTorch / Deep Learning ──────────────────────────────────────────────────
+# Model checkpoints & weights
+*.pth
+*.pt
+*.ckpt
+*.pkl
+*.bin
+
+# TensorBoard logs
+runs/
+logs/
+tb_logs/
+
+# ── Dataset (LMDB & Images) ──────────────────────────────────────────────────
+# LMDB database files
+*.mdb
+*.ldb
+
+# Dataset root directories (large binary data)
+DocTamperV1-TrainingSet/
+DocTamperV1-TestingSet/
+DocTamperV1-FCD/
+DocTamperV1-SCD/
+data/
+
+# ── Evaluation outputs ───────────────────────────────────────────────────────
+eval_results/
+outputs/
+visualizations/
+
+# ── Jupyter Notebook ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── OS-specific ──────────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+*.swo
+.cache/

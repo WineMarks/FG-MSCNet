@@ -1,0 +1,25 @@
+# ── Deep Learning ────────────────────────────────────────────────────────────
+# Install PyTorch with the appropriate CUDA version from https://pytorch.org/
+# Example (CUDA 12.1):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+torchvision>=0.16.0
+
+# ── Data & Augmentation ──────────────────────────────────────────────────────
+numpy>=1.24.0
+opencv-python>=4.8.0
+albumentations>=1.3.1
+lmdb>=1.4.1
+
+# ── Metrics & Evaluation ─────────────────────────────────────────────────────
+scikit-learn>=1.3.0
+
+# ── Training Utilities ───────────────────────────────────────────────────────
+tqdm>=4.66.0
+tensorboard>=2.14.0
+
+# ── Visualization ────────────────────────────────────────────────────────────
+matplotlib>=3.7.0
+
+# ── Model Summary ────────────────────────────────────────────────────────────
+torchinfo>=1.8.0
