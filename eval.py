@@ -194,7 +194,6 @@ def main():
         if rank == 0: all_results.append(res)
         dist.barrier()
         
-    # 生成 Markdown 对比表格
     if rank == 0:
         print("\n" + "="*80)
         print("🎯 Cross-Dataset Performance Audit Report")

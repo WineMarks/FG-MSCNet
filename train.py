@@ -24,7 +24,7 @@ cudnn.benchmark = True
 
 from layer.fg_mscnet import FG_MSCNet
 from loss import MultiScaleCompositeLoss
-from dataset import DocTamperDataset  # 确保 dataset.py 中有这个类
+from dataset import DocTamperDataset
 
 def setup_distributed():
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
@@ -103,6 +103,7 @@ def parse_args():
     parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--finetune', type=str, default=None, help='for finetune')
     parser.add_argument('--train_ratio', type=float, default=1.0, help='ratio of training set')
+    parser.add_argument('--val_ratio', type=float, default=0.1, help='ratio of validation split from training set')
     
     return parser.parse_args()
 
@@ -116,30 +117,36 @@ def main():
     if rank == 0:
         logger.info(f"Distributed Mode: World Size = {world_size}")
 
-    # train_dataset = DocTamperDataset(args.data_dir, mode='train', img_size=args.img_size)
+    # Split validation from training set only to avoid using testing set for model selection.
     train_dataset_full = DocTamperDataset(args.data_dir, mode='train', img_size=args.img_size)
+    total_size = len(train_dataset_full)
+
+    if not (0.0 < args.val_ratio < 1.0):
+        raise ValueError(f"val_ratio must be in (0, 1), got {args.val_ratio}")
+
+    rng = np.random.default_rng(42)
+    all_indices = np.arange(total_size)
+    rng.shuffle(all_indices)
+
+    num_val_samples = int(total_size * args.val_ratio)
+    num_val_samples = max(1, min(num_val_samples, total_size - 1))
+
+    val_indices = all_indices[:num_val_samples]
+    train_pool_indices = all_indices[num_val_samples:]
 
     if args.train_ratio < 1.0:
-        train_size = int(len(train_dataset_full) * args.train_ratio)
-        np.random.seed(42)
-        train_indices = np.random.choice(len(train_dataset_full), train_size, replace=False)
-        train_dataset = Subset(train_dataset_full, train_indices)
+        train_size = int(len(train_pool_indices) * args.train_ratio)
+        train_size = max(1, train_size)
+        train_indices = rng.choice(train_pool_indices, size=train_size, replace=False)
     else:
-        train_dataset = train_dataset_full
+        train_indices = train_pool_indices
 
-    val_dataset_full = DocTamperDataset(args.data_dir, mode='val', img_size=args.img_size)
-
-    val_ratio = 0.1
-    val_size = len(val_dataset_full)
-    num_val_samples = int(val_size * val_ratio)
-
-    np.random.seed(42) 
-    subset_indices = np.random.choice(val_size, num_val_samples, replace=False)
-    val_dataset = Subset(val_dataset_full, subset_indices)
+    train_dataset = Subset(train_dataset_full, train_indices.tolist())
+    val_dataset = Subset(train_dataset_full, val_indices.tolist())
 
     if rank == 0:
-        logger.info(f"📦 Train set size: {len(train_dataset)}")
-        logger.info(f"📦 Val set size: {len(val_dataset)} (Reduced from {val_size} to speed up!)")
+        logger.info(f"Train set size: {len(train_dataset)}")
+        logger.info(f"Val set size: {len(val_dataset)} (split from TrainingSet, val_ratio={args.val_ratio})")
     
     train_sampler = DistributedSampler(train_dataset, shuffle=True)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
@@ -180,13 +187,13 @@ def main():
         start_epoch = checkpoint['epoch'] + 1
         best_f1 = checkpoint.get('best_f1', 0.0)
         if rank == 0:
-            logger.info(f"🔄 Resumed from epoch {start_epoch}")
+            logger.info(f"Resumed from epoch {start_epoch}")
 
     elif args.finetune and os.path.isfile(args.finetune):
         checkpoint = torch.load(args.finetune, map_location={'cuda:%d' % 0: 'cuda:%d' % local_rank})
-        model.module.load_state_dict(checkpoint['model_state_dict'], strict=False) # strict=False 容忍少许维度变动
+        model.module.load_state_dict(checkpoint['model_state_dict'], strict=False)
         if rank == 0:
-            logger.info(f"🚀 Loaded pretrained weights from {args.finetune} for FINE-TUNING!")
+            logger.info(f"Loaded pretrained weights from {args.finetune} for FINE-TUNING!")
 
     for epoch in range(start_epoch, args.epochs):
         train_sampler.set_epoch(epoch)
